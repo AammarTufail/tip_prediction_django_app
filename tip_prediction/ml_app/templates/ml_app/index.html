@@ -1,0 +1,310 @@
+{% extends 'ml_app/base.html' %}
+
+{% block title %}Restaurant Analytics Platform - Home{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hero-section {
+        padding: 4rem 0;
+        text-align: center;
+        color: white;
+    }
+
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .hero-subtitle {
+        font-size: 1.4rem;
+        margin-bottom: 3rem;
+        opacity: 0.9;
+    }
+
+    .feature-card {
+        padding: 2.5rem;
+        margin: 1.5rem 0;
+        text-align: center;
+        height: 100%;
+    }
+
+    .feature-icon {
+        font-size: 3rem;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 1.5rem;
+    }
+
+    .feature-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+    }
+
+    .feature-description {
+        color: var(--text-secondary);
+        line-height: 1.7;
+    }
+
+    .stats-section {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 3rem 0;
+        margin: 3rem 0;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+    }
+
+    .stat-item {
+        text-align: center;
+        color: white;
+        margin: 1rem 0;
+    }
+
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        display: block;
+    }
+
+    .stat-label {
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+
+    .cta-section {
+        text-align: center;
+        padding: 3rem 0;
+    }
+
+    .cta-card {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+        color: white;
+        padding: 3rem;
+        border-radius: 20px;
+        text-align: center;
+        margin: 2rem 0;
+    }
+
+    .technology-badge {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        margin: 0.3rem;
+        color: white;
+        font-size: 0.9rem;
+        backdrop-filter: blur(10px);
+    }
+
+    @media (max-width: 768px) {
+        .hero-title {
+            font-size: 2.5rem;
+        }
+        
+        .hero-subtitle {
+            font-size: 1.2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Hero Section -->
+    <section class="hero-section fade-in-up">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h1 class="hero-title">
+                    <i class="fas fa-utensils"></i> Restaurant Analytics Platform
+                </h1>
+                <p class="hero-subtitle">
+                    Leverage the power of machine learning to predict tips and optimize your restaurant's performance
+                </p>
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <a href="{% url 'ml_app:predict_tip' %}" class="btn btn-success btn-lg">
+                        <i class="fas fa-magic"></i> Start Predicting Tips
+                    </a>
+                    <button class="btn btn-outline-light btn-lg" onclick="scrollToFeatures()">
+                        <i class="fas fa-info-circle"></i> Learn More
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <span class="stat-number">95%</span>
+                    <span class="stat-label">Accuracy Rate</span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <span class="stat-number">244</span>
+                    <span class="stat-label">Training Records</span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <span class="stat-number">6</span>
+                    <span class="stat-label">Input Features</span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <span class="stat-number">XGBoost</span>
+                    <span class="stat-label">ML Algorithm</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="my-5">
+        <div class="row">
+            <div class="col-lg-4">
+                <div class="card feature-card fade-in-up">
+                    <div class="feature-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3 class="feature-title">Smart Predictions</h3>
+                    <p class="feature-description">
+                        Our XGBoost algorithm analyzes multiple factors including bill amount, party size, gender, smoking preference, day of week, and meal time to provide accurate tip predictions.
+                    </p>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card feature-card fade-in-up" style="animation-delay: 0.2s;">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3 class="feature-title">Data-Driven Insights</h3>
+                    <p class="feature-description">
+                        Built on real restaurant data with 244 dining records, our model provides reliable insights to help optimize your restaurant's service and pricing strategies.
+                    </p>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card feature-card fade-in-up" style="animation-delay: 0.4s;">
+                    <div class="feature-icon">
+                        <i class="fas fa-lightning-bolt"></i>
+                    </div>
+                    <h3 class="feature-title">Instant Results</h3>
+                    <p class="feature-description">
+                        Get real-time tip predictions in seconds. Simply input the dining details and receive immediate forecasts to better understand customer tipping patterns.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Technology Section -->
+    <section class="my-5">
+        <div class="card">
+            <div class="card-body text-center p-4">
+                <h3 class="mb-4 text-primary">Powered by Modern Technology</h3>
+                <div class="mb-4">
+                    <span class="technology-badge"><i class="fab fa-python"></i> Python</span>
+                    <span class="technology-badge"><i class="fas fa-brain"></i> XGBoost</span>
+                    <span class="technology-badge"><i class="fas fa-chart-line"></i> Scikit-learn</span>
+                    <span class="technology-badge"><i class="fab fa-bootstrap"></i> Bootstrap</span>
+                    <span class="technology-badge"><i class="fas fa-server"></i> Django</span>
+                    <span class="technology-badge"><i class="fas fa-database"></i> NumPy</span>
+                </div>
+                <p class="text-muted">
+                    Built with industry-standard machine learning libraries and modern web technologies for optimal performance and reliability.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="cta-card fade-in-up">
+            <h2><i class="fas fa-rocket"></i> Ready to Get Started?</h2>
+            <p class="mb-4">Start predicting tips now and discover insights about your restaurant's tipping patterns!</p>
+            <a href="{% url 'ml_app:predict_tip' %}" class="btn btn-light btn-lg">
+                <i class="fas fa-play"></i> Launch Tip Predictor
+            </a>
+        </div>
+    </section>
+
+    <!-- How it Works Section -->
+    <section class="my-5">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <h2 class="text-white">How It Works</h2>
+                <p class="text-white-50">Simple steps to get accurate tip predictions</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 text-center text-white mb-4">
+                <div class="mb-3">
+                    <i class="fas fa-edit fa-3x"></i>
+                </div>
+                <h4>1. Input Details</h4>
+                <p>Enter bill amount, party size, and dining preferences</p>
+            </div>
+            <div class="col-md-4 text-center text-white mb-4">
+                <div class="mb-3">
+                    <i class="fas fa-cogs fa-3x"></i>
+                </div>
+                <h4>2. AI Processing</h4>
+                <p>Our XGBoost model analyzes the data patterns</p>
+            </div>
+            <div class="col-md-4 text-center text-white mb-4">
+                <div class="mb-3">
+                    <i class="fas fa-chart-line fa-3x"></i>
+                </div>
+                <h4>3. Get Prediction</h4>
+                <p>Receive accurate tip amount prediction instantly</p>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function scrollToFeatures() {
+        document.getElementById('features').scrollIntoView({
+            behavior: 'smooth'
+        });
+    }
+
+    // Add animation on scroll
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, observerOptions);
+
+    // Observe all fade-in elements
+    document.addEventListener('DOMContentLoaded', function() {
+        const fadeElements = document.querySelectorAll('.fade-in-up');
+        fadeElements.forEach((el, index) => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            el.style.transition = 'all 0.6s ease-out';
+            el.style.transitionDelay = `${index * 0.1}s`;
+            observer.observe(el);
+        });
+    });
+</script>
+{% endblock %}
