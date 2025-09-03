@@ -3,7 +3,7 @@
 ## Prerequisites
 - Hostinger KVM VPS account
   - Use this link to purchase and get a discount:
-    [Hostinger KVM VPS](https://hostinger.com?REFERRALCODE=1MUHAMMAD0984)
+[Hostinger KVM VPS Discounted Link](https://hostinger.com?REFERRALCODE=1MUHAMMAD0984)
 - Domain name (optional but recommended)
   - Buy a domain from [Namecheap](https://www.namecheap.com) or [GoDaddy](https://www.godaddy.com) or [Hostinger](https://www.hostinger.com)
 
@@ -14,6 +14,8 @@
 > server is your Hostinger KVM VPS
 
 ### 1.1 Connect to Your VPS using SSH
+> Here you can find the guide to use SSH for connecting to your server: [How to Use SSH on VPS?](https://www.hostinger.com/support/5723772-how-to-connect-to-your-vps-via-ssh-at-hostinger/)
+
 ```bash
 ssh root@your_server_ip
 ```
