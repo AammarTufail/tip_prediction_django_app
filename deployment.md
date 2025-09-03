@@ -58,7 +58,7 @@ sudo -u postgres psql
 
 ```sql
 CREATE DATABASE ml_model_db;
-CREATE USER ml_user WITH PASSWORD 'Codanics@user123';
+CREATE USER ml_user WITH PASSWORD 'Yourpasswrd';
 ALTER ROLE ml_user SET client_encoding TO 'utf8';
 ALTER ROLE ml_user SET default_transaction_isolation TO 'read committed';
 ALTER ROLE ml_user SET timezone TO 'UTC';
@@ -122,14 +122,14 @@ from .settings import *
 import os
 
 DEBUG = False
-ALLOWED_HOSTS = ['your_domain.com', '45.93.138.9', 'localhost']
+ALLOWED_HOSTS = ['your_domain.com', '45.xx.xxx.x (your IP)', 'localhost']
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'ml_model_db',
         'USER': 'ml_user',
-        'PASSWORD': 'Codanics@user123', # you can change this according to your needs
+        'PASSWORD': 'Yourpasswrd', # you can change this according to your needs
         'HOST': 'localhost',
         'PORT': '5432',
     }
@@ -214,7 +214,7 @@ server {
     listen 80 default_server;
     listen [::]:80 default_server;
     listen 443 ssl;
-    server_name 45.93.138.9;
+    server_name 45.xx.xxx.x (your IP);
 
     ssl_certificate     /etc/ssl/certs/ip-selfsigned.crt;
     ssl_certificate_key /etc/ssl/private/ip-selfsigned.key;
@@ -259,8 +259,8 @@ sudo chmod 660 /home/django_user/uwsgi.sock
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout /etc/ssl/private/ip-selfsigned.key \
   -out /etc/ssl/certs/ip-selfsigned.crt \
-  -subj "/CN=45.93.138.9" \
-  -addext "subjectAltName = IP:45.93.138.9"
+  -subj "/CN=45.xx.xxx.x (your IP)" \
+  -addext "subjectAltName = IP:45.xx.xxx.x (your IP)"
 ```
 
 ### 7.2 Install Certbot (for domain-based SSL later)
@@ -276,15 +276,15 @@ sudo apt install -y certbot python3-certbot-nginx
 curl -I http://127.0.0.1
 
 # Test external connection
-curl -I http://45.93.138.9
+curl -I http://45.xx.xxx.x (your IP)
 ```
 > if 502 Bad Gateway error occurs, check the above logs for any errors.
 > If 200 OK response is received, your application is working correctly.
 
 **Visit your application at:**
-- `http://45.93.138.9/` 
-- `https://45.93.138.9/` (with self-signed certificate)
-- For admin: `http://45.93.138.9/admin/`
+- `http://45.xx.xxx.x (your IP)/` 
+- `https://45.xx.xxx.x (your IP)/` (with self-signed certificate)
+- For admin: `http://45.xx.xxx.x (your IP)/admin/`
 
 ### 8.2 Reload Application (when needed)
 ```bash
@@ -460,7 +460,7 @@ If you have a subdomain from another Hostinger account, you can point it to your
 # For subdomain (e.g., api.yourdomain.com)
 Type: A Record
 Name: django.codanics.com
-Points to: 45.93.138.9 (your VPS IP)
+Points to: 45.xx.xxx.x (your IP) (your VPS IP)
 TTL: 3600
 
 # Optional: Add AAAA record if you have IPv6
@@ -481,7 +481,7 @@ server {
     listen 80 default_server;
     listen [::]:80 default_server;
     listen 443 ssl;
-    server_name 45.93.138.9 django.codanics.com;
+    server_name 45.xx.xxx.x (your IP) django.codanics.com;
 
     # Rest of configuration remains same...
 }
@@ -494,7 +494,7 @@ nano /home/django_user/tip_prediction_django_app/tip_prediction/tip_prediction/s
 
 Add your subdomain to ALLOWED_HOSTS:
 ```python
-ALLOWED_HOSTS = ['django.codanics.com', 'yourdomain.com', '45.93.138.9', 'localhost']
+ALLOWED_HOSTS = ['django.codanics.com', 'yourdomain.com', '45.xx.xxx.x (your IP)', 'localhost']
 ```
 
 #### Step 5: Get SSL Certificate for Domain
@@ -548,7 +548,7 @@ uwsgi --reload /home/django_user/tip_prediction.pid
 nslookup django.codanics.com
 dig django.codanics.com
 
-# Should return your VPS IP: 45.93.138.9
+# Should return your VPS IP: 45.xx.xxx.x (your IP)
 ```
 
 #### Test Application Access

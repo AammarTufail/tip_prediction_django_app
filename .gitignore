@@ -4,3 +4,4 @@
 .venv/*
 
 /*.sh
+/deployment_my_ip.md
