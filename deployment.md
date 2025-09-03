@@ -2,357 +2,396 @@
 
 ## Prerequisites
 - Hostinger KVM VPS account
-  - Use this link to purchase and get a discount:
-[Hostinger KVM VPS Discounted Link](https://hostinger.com?REFERRALCODE=1MUHAMMAD0984)
+  - Use this link to purchase and get a discount: [Hostinger KVM VPS Discounted Link](https://hostinger.com?REFERRALCODE=1MUHAMMAD0984)
 - Domain name (optional but recommended)
   - Buy a domain from [Namecheap](https://www.namecheap.com) or [GoDaddy](https://www.godaddy.com) or [Hostinger](https://www.hostinger.com)
-
 - Local Django project ready for deployment
 
 ## Step 1: Server Setup and Initial Configuration
 
-> server is your Hostinger KVM VPS
-
 ### 1.1 Connect to Your VPS using SSH
-> Here you can find the guide to use SSH for connecting to your server: [How to Use SSH on VPS?](https://www.hostinger.com/support/5723772-how-to-connect-to-your-vps-via-ssh-at-hostinger/)
-
 ```bash
 ssh root@your_server_ip
 ```
 
-> You can also use server side via terminal inside hostinger VPS.
+You can see the following guide to use ssh via hostinger: [Hostinger SSH Guide](https://www.hostinger.com/support/5723772-how-to-connect-to-your-vps-via-ssh-at-hostinger/)
 
-### 1.2 Update System Packages
+### 1.2 Update System Packages and Install Dependencies
 ```bash
-sudo apt update && apt upgrade -y
-```
+# Update package lists
+sudo apt update && sudo apt upgrade -y
 
-### 1.3 Install Required Software
-```bash
-# Install Python, pip, and essential packages
-sudo apt install python3 python3-pip python3-venv nginx supervisor postgresql postgresql-contrib git -y
-
-# Install additional dependencies for ML libraries
-sudo apt install build-essential python3-dev libpq-dev -y
+# Install essential packages including uWSGI dependencies
+sudo apt install -y gcc python3-dev python3.12-venv nginx postgresql libpq-dev
 ```
 
 ## Step 2: Create Application User
 
-### 2.1 Create Non-root User
+### 2.1 Create Dedicated Django User
 ```bash
-adduser django_user
-usermod -aG sudo django_user
-su - django_user
+# Create user with proper groups and shell
+sudo useradd -m -s /bin/bash -G www-data django_user
+
+# Set password for the user
+sudo passwd django_user
+
+#save the password
+
+# Switch to django user
+sudo su - django_user
+```
+
+### 2.2 Set Directory Permissions
+```bash
+# Set proper permissions for home directory (important for Nginx access)
+chmod 711 /home/django_user
+cd /home/django_user
 ```
 
 ## Step 3: Setup PostgreSQL Database
 
 ### 3.1 Configure PostgreSQL
 ```bash
+# Switch to postgres user and access PostgreSQL
 sudo -u postgres psql
 ```
 
 ```sql
 CREATE DATABASE ml_model_db;
-CREATE USER ml_user WITH PASSWORD 'your_strong_password';
+CREATE USER ml_user WITH PASSWORD 'Codanics@user123';
 ALTER ROLE ml_user SET client_encoding TO 'utf8';
 ALTER ROLE ml_user SET default_transaction_isolation TO 'read committed';
 ALTER ROLE ml_user SET timezone TO 'UTC';
 GRANT ALL PRIVILEGES ON DATABASE ml_model_db TO ml_user;
+\c ml_model_db;
+GRANT ALL PRIVILEGES ON SCHEMA public TO ml_user;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ml_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ml_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ml_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ml_user;
 \q
 ```
-
-> Note: Replace `your_strong_password` with a strong password of your choice.
 
 ## Step 4: Deploy Django Application
 
 ### 4.1 Clone Your Project
-> 1. Start your git repository locally
-> 2. Install pipreqs library and run this command to create a requirements.txt file with versions
 ```bash
-pip install pipreqs
-pipreqs /path/to/your/project
-```
-> 3. Add your files and commit changes
-> 4. Push to the remote repository publically if you want to run git clone without any authentication
-> 5. Clone the repository on your VPS
+# Make sure you're in django_user home directory
+sudo su django_user
+cd
+chmod 711 .
 
-
-```bash
-cd /home/django_user
-git clone https://github.com/yourusername/your-repo.git
-cd your-repo
+git clone https://github.com/AammarTufail/tip_prediction_django_app.git
 ```
 
 ### 4.2 Create Virtual Environment
 ```bash
+# Create virtual environment in home directory (not in app directory)
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
 ### 4.3 Install Dependencies
 ```bash
-pip install -r requirements.txt
-pip install gunicorn psycopg2-binary
+pip install -r ./tip_prediction_django_app/requirements.txt
+pip install uwsgi psycopg2-binary
 ```
-> `gunicorn` is used for serving the Django application in production as a WSGI server.
-> `psycopg2-binary` is a PostgreSQL adapter for Python.
 
-### 4.4 Configure Django Settings
-
-Create a production settings file:
+### 4.4 Setup Auto-activation
 ```bash
-nano ml_model_django/settings_prod.py
+# Edit .bashrc to auto-activate virtual environment
+nano ~/.bashrc
 ```
 
-Add production settings:
+Add these lines to .bashrc at the end to automatically load the virtual environment when you log in to django_user:
+```bash
+cd
+source .venv/bin/activate
+```
+> press `Ctrl+D` and login again to django_user `sudo su django_user` you will see the virtual environment activated automatically.
+
+### 4.5 Configure Django Settings for Production
+```bash
+cd ./tip_prediction_django_app/tip_prediction
+nano tip_prediction/settings_prod.py
+```
+
+Add:
 ```python
 from .settings import *
+import os
 
 DEBUG = False
-ALLOWED_HOSTS = ['your_domain.com', 'your_server_ip', 'localhost'] # add either your domain or server IP
+ALLOWED_HOSTS = ['your_domain.com', '45.93.138.9', 'localhost']
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'ml_model_db', # we created this database
-        'USER': 'ml_user', # we created this user
-        'PASSWORD': 'your_strong_password', # we created this password
+        'NAME': 'ml_model_db',
+        'USER': 'ml_user',
+        'PASSWORD': 'Codanics@user123', # you can change this according to your needs
         'HOST': 'localhost',
         'PORT': '5432',
     }
 }
 
-STATIC_ROOT = '/home/django_user/ml_model_django/staticfiles'
-MEDIA_ROOT = '/home/django_user/ml_model_django/media'
+STATIC_ROOT = '/home/django_user/tip_prediction_django_app/tip_prediction/staticfiles'
+MEDIA_ROOT = '/home/django_user/tip_prediction_django_app/tip_prediction/media'
 
 # Security settings
-SECURE_BROWSER_XSS_FILTER = True # Enable XSS filtering
-SECURE_CONTENT_TYPE_NOSNIFF = True # Enable content type nosniff meaning browsers should not sniff the content type
-X_FRAME_OPTIONS = 'DENY' # Protect against clickjacking
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
 ```
 
-### 4.5 Configure Environment Variables
+### 4.6 Run Database Migrations and Collect Static Files
 ```bash
-nano .env
-```
-
-Add your environment variables which you can reference in your Django settings:
-```
-SECRET_KEY=your_secret_key_here
-DATABASE_URL=postgresql://ml_user:your_strong_password@localhost/ml_model_db
-```
-> You can find your secret key in the Django settings file by looking for the `SECRET_KEY` variable. You can create a new secret key using the following command:
-
-```bash
-python -c 'from django.core.management import utils; print(utils.get_random_secret_key())'
-```
-
-### 4.6 Run Django Commands
-```bash
-export DJANGO_SETTINGS_MODULE=ml_model_django.settings_prod
+export DJANGO_SETTINGS_MODULE=tip_prediction.settings_prod
 python manage.py collectstatic --noinput
 python manage.py migrate
 python manage.py createsuperuser
 ```
+> save the credentials which will be used later.
 
-## Step 5: Configure Gunicorn
+## Step 5: Configure uWSGI
 
-### 5.1 Test Gunicorn
+### 5.1 Create uWSGI Configuration
 ```bash
-gunicorn --bind 0.0.0.0:8000 ml_model_django.wsgi
-```
-> If this works, you should see output indicating that Gunicorn is running.
-
-### 5.2 Create Gunicorn Socket
-```bash
-sudo nano /etc/systemd/system/gunicorn.socket
+cd /home/django_user
+nano uwsgi.ini
 ```
 
-Add:
+Add this configuration (corrected paths for your project structure):
 ```ini
-[Unit]
-Description=gunicorn socket
+[uwsgi]
+chdir = /home/django_user/tip_prediction_django_app/tip_prediction
+module = tip_prediction.wsgi:application
+home = /home/django_user/.venv
+env = DJANGO_SETTINGS_MODULE=tip_prediction.settings_prod
 
-[Socket]
-ListenStream=/run/gunicorn.sock
+master = true
+processes = 2
+threads = 2
 
-[Install]
-WantedBy=sockets.target
+socket = /home/django_user/uwsgi.sock
+chmod-socket = 660
+chown-socket = django_user:www-data
+vacuum = true
+die-on-term = true
+
+daemonize = /home/django_user/tip_prediction.log
+pidfile = /home/django_user/tip_prediction.pid
 ```
 
-### 5.3 Create Gunicorn Service
+### 5.2 Test uWSGI
 ```bash
-sudo nano /etc/systemd/system/gunicorn.service
-```
+# Clean start - stop any prior instance
+[ -f /home/django_user/tip_prediction.pid ] && uwsgi --stop /home/django_user/tip_prediction.pid || true
 
-Add:
-```ini
-[Unit]
-Description=gunicorn daemon
-Requires=gunicorn.socket
-After=network.target
-
-[Service]
-User=django_user
-Group=www-data
-WorkingDirectory=/home/django_user/ml_model_django
-Environment="DJANGO_SETTINGS_MODULE=ml_model_django.settings_prod"
-ExecStart=/home/django_user/ml_model_django/venv/bin/gunicorn \
-          --access-logfile - \
-          --workers 3 \
-          --bind unix:/run/gunicorn.sock \
-          ml_model_django.wsgi:application
-
-[Install]
-WantedBy=multi-user.target
-```
-
-### 5.4 Start and Enable Gunicorn
-```bash
-sudo systemctl start gunicorn.socket
-sudo systemctl enable gunicorn.socket
-sudo systemctl status gunicorn.socket
+# Start uWSGI
+uwsgi --ini /home/django_user/uwsgi.ini
+sleep 2
+# Check if socket was created
+ls -l /home/django_user/uwsgi.sock
+# Check logs
+tail -n60 /home/django_user/tip_prediction.log
 ```
 
 ## Step 6: Configure Nginx
-Nginx is used as a reverse proxy to forward requests to the Gunicorn server.
+
+```bash
+sudo apt install -y nginx
+```
 
 ### 6.1 Create Nginx Configuration
 ```bash
-sudo nano /etc/nginx/sites-available/ml_model_django
+sudo nano /etc/nginx/conf.d/tip_prediction.conf
 ```
 
-Add:
+Add this configuration:
 ```nginx
 server {
-    listen 80;
-    server_name your_domain.com your_server_ip;
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    listen 443 ssl;
+    server_name 45.93.138.9;
 
-    location = /favicon.ico { access_log off; log_not_found off; }
-    location /static/ {
-        root /home/django_user/ml_model_django;
-    }
-    
-    location /media/ {
-        root /home/django_user/ml_model_django;
-    }
+    ssl_certificate     /etc/ssl/certs/ip-selfsigned.crt;
+    ssl_certificate_key /etc/ssl/private/ip-selfsigned.key;
 
     location / {
-        include proxy_params;
-        proxy_pass http://unix:/run/gunicorn.sock;
+        include uwsgi_params;
+        uwsgi_pass unix:/home/django_user/uwsgi.sock;
+    }
+
+    location /static/ {
+        alias /home/django_user/tip_prediction_django_app/tip_prediction/staticfiles/;
+    }
+
+    location /media/ {
+        alias /home/django_user/tip_prediction_django_app/tip_prediction/media/;
     }
 }
 ```
 
-### 6.2 Enable Site
+### 6.2 Test and Start Nginx
 ```bash
-sudo ln -s /etc/nginx/sites-available/ml_model_django /etc/nginx/sites-enabled
+# Test nginx configuration
 sudo nginx -t
+
+# Restart nginx
 sudo systemctl restart nginx
 ```
 
-## Step 7: Configure Firewall
-
+### 6.3 Fix Socket Permissions
 ```bash
-sudo ufw allow 'Nginx Full'
-sudo ufw allow ssh
-sudo ufw enable
+# Ensure proper permissions for socket file
+sudo chmod 711 /home/django_user
+sudo chgrp www-data /home/django_user/uwsgi.sock
+sudo chmod 660 /home/django_user/uwsgi.sock
 ```
 
-## Step 8: SSL Certificate (Optional but Recommended)
+## Step 7: SSL Certificate Setup
 
-### 8.1 Install Certbot
+### 7.1 Generate Self-Signed Certificate for IP
 ```bash
-sudo apt install certbot python3-certbot-nginx -y
+# Create self-signed certificate for IP address
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout /etc/ssl/private/ip-selfsigned.key \
+  -out /etc/ssl/certs/ip-selfsigned.crt \
+  -subj "/CN=45.93.138.9" \
+  -addext "subjectAltName = IP:45.93.138.9"
 ```
 
-### 8.2 Obtain SSL Certificate
+### 7.2 Install Certbot (for domain-based SSL later)
 ```bash
-sudo certbot --nginx -d your_domain.com
+sudo apt install -y certbot python3-certbot-nginx
 ```
 
-## Step 9: Process Management with Supervisor
+## Step 8: Final Testing
 
-### 9.1 Install and Configure Supervisor
+### 8.1 Test Application
 ```bash
-sudo nano /etc/supervisor/conf.d/ml_model_django.conf
+# Test local connection
+curl -I http://127.0.0.1
+
+# Test external connection
+curl -I http://45.93.138.9
+```
+> if 502 Bad Gateway error occurs, check the above logs for any errors.
+> If 200 OK response is received, your application is working correctly.
+
+**Visit your application at:**
+- `http://45.93.138.9/` 
+- `https://45.93.138.9/` (with self-signed certificate)
+- For admin: `http://45.93.138.9/admin/`
+
+### 8.2 Reload Application (when needed)
+```bash
+# Reload uWSGI gracefully
+uwsgi --reload /home/django_user/tip_prediction.pid
+
+# View logs
+cat /home/django_user/tip_prediction.log
 ```
 
-Add:
-```ini
-[program:ml_model_django]
-command=/home/django_user/ml_model_django/venv/bin/gunicorn ml_model_django.wsgi:application
-directory=/home/django_user/ml_model_django
-user=django_user
-autostart=true
-autorestart=true
-redirect_stderr=true
-stdout_logfile=/var/log/ml_model_django.log
-environment=DJANGO_SETTINGS_MODULE="ml_model_django.settings_prod"
-```
+## Step 9: Maintenance and Updates
 
-### 9.2 Update Supervisor
+### 9.1 Update Application
 ```bash
-sudo supervisorctl reread
-sudo supervisorctl update
-sudo supervisorctl start ml_model_django
-```
+# Switch to django user
+sudo su - django_user
+cd tip_prediction_django_app
 
-## Step 10: Final Verification
-
-### 10.1 Check Services Status
-```bash
-sudo systemctl status nginx
-sudo systemctl status gunicorn
-sudo supervisorctl status
-```
-
-### 10.2 Test Application
-Visit your domain or server IP in a browser to verify the deployment.
-
-## Step 11: Maintenance and Updates
-
-### 11.1 Update Application
-```bash
-cd /home/django_user/ml_model_django
+# Update code
 git pull origin main
-source venv/bin/activate
+
+# Update dependencies if needed
 pip install -r requirements.txt
+
+# Run migrations and collect static files
+cd tip_prediction
+export DJANGO_SETTINGS_MODULE=tip_prediction.settings_prod
 python manage.py migrate
 python manage.py collectstatic --noinput
-sudo supervisorctl restart ml_model_django
+
+# Reload application
+cd /home/django_user
+uwsgi --reload tip_prediction.pid
 ```
 
-### 11.2 Monitor Logs
+### 9.2 Monitor Logs
 ```bash
-# Application logs
-tail -f /var/log/ml_model_django.log
+# uWSGI logs
+tail -f /home/django_user/tip_prediction.log
 
 # Nginx logs
-tail -f /var/log/nginx/error.log
-tail -f /var/log/nginx/access.log
+sudo tail -f /var/log/nginx/error.log
+sudo tail -f /var/log/nginx/access.log
 ```
 
 ## Troubleshooting
 
 ### Common Issues:
-1. **Permission Errors**: Ensure proper ownership of files
+
+#### 1. **502 Bad Gateway**
 ```bash
-sudo chown -R django_user:www-data /home/django_user/ml_model_django
+# Check if uWSGI is running
+ps aux | grep uwsgi
+
+# Check socket file exists and has correct permissions
+ls -la /home/django_user/uwsgi.sock
+
+# Check uWSGI logs
+tail -20 /home/django_user/tip_prediction.log
+
+# Fix permissions if needed
+sudo chmod 711 /home/django_user
+sudo chgrp www-data /home/django_user/uwsgi.sock
+sudo chmod 660 /home/django_user/uwsgi.sock
+
+# Restart services
+uwsgi --reload /home/django_user/tip_prediction.pid
+sudo systemctl restart nginx
 ```
 
-2. **Static Files Not Loading**: Check nginx configuration and static file paths
+#### 2. **uWSGI Won't Start**
+```bash
+# Check if there's a stale PID file
+ls -la /home/django_user/tip_prediction.pid
 
-3. **Database Connection Issues**: Verify PostgreSQL service and credentials
+# Remove stale PID if exists
+rm -f /home/django_user/tip_prediction.pid
 
-4. **ML Model Loading Issues**: Ensure all ML dependencies are installed and model files are accessible
+# Start fresh
+uwsgi --ini /home/django_user/uwsgi.ini
 
-### Performance Optimization:
-- Adjust Gunicorn workers based on server resources
-- Configure Redis for caching
-- Use CDN for static files
-- Optimize database queries
+# Check logs for errors
+tail -f /home/django_user/tip_prediction.log
+```
+
+#### 3. **Static Files Not Loading**
+```bash
+# Recollect static files
+cd /home/django_user/tip_prediction_django_app/tip_prediction
+source /home/django_user/.venv/bin/activate
+export DJANGO_SETTINGS_MODULE=tip_prediction.settings_prod
+python manage.py collectstatic --clear --noinput
+
+# Check static files directory
+ls -la /home/django_user/tip_prediction_django_app/tip_prediction/staticfiles/
+
+# Restart nginx
+sudo systemctl restart nginx
+```
+
+#### 4. **Permission Errors**
+```bash
+# Fix ownership and permissions
+sudo chown -R django_user:www-data /home/django_user/tip_prediction_django_app
+sudo chmod -R 755 /home/django_user/tip_prediction_django_app
+sudo chmod 711 /home/django_user
+```
 
 ## Security Best Practices
 
@@ -361,30 +400,240 @@ sudo chown -R django_user:www-data /home/django_user/ml_model_django
 3. **SSH Security**: Use key-based authentication
 4. **Database Security**: Use strong passwords and limit access
 5. **Django Security**: Follow Django security checklist
-6. **Backup Strategy**: Implement regular backups
+6. **SSL Certificate**: Use proper SSL certificates for production
 
-## Backup Strategy
+## Quick Commands Reference
 
-### 11.3 Database Backup
+### Start/Stop/Reload uWSGI
 ```bash
-# Create backup script
-nano /home/django_user/backup_db.sh
+# Start
+uwsgi --ini /home/django_user/uwsgi.ini
+
+# Stop
+uwsgi --stop /home/django_user/tip_prediction.pid
+
+# Reload
+uwsgi --reload /home/django_user/tip_prediction.pid
+
+# Check status
+ps aux | grep uwsgi
 ```
 
-Add:
+### Nginx Commands
+```bash
+# Test configuration
+sudo nginx -t
+
+# Restart
+sudo systemctl restart nginx
+
+# Check status
+sudo systemctl status nginx
+```
+
+This guide provides a complete deployment solution based on your working script for Django ML model application on Hostinger KVM VPS.
+
+## Attach your domain to hostinger
+
+1. Log in to your Hostinger account.
+2. Go to the "Domains" section.
+3. Click on "Add Domain" and enter your domain name.
+4. Follow the instructions to point your domain to your VPS IP address.
+5. Once the DNS changes propagate, you should be able to access your application via your domain.
+
+
+## Connecting Hostinger Subdomain from Another Account
+
+If you have a subdomain from another Hostinger account, you can point it to your VPS IP address by following these steps:
+
+### Method 1: DNS Zone Management (Recommended)
+
+#### Step 1: Access DNS Zone Editor
+1. Log into the Hostinger account that owns the main domain
+2. Go to **Hosting** → **Manage** → **DNS Zone Editor**
+3. Find your domain in the list
+
+#### Step 2: Add/Edit DNS Records
+```bash
+# Add these DNS records in the DNS Zone Editor:
+
+# For subdomain (e.g., api.yourdomain.com)
+Type: A Record
+Name: django.codanics.com
+Points to: 45.93.138.9 (your VPS IP)
+TTL: 3600
+
+# Optional: Add AAAA record if you have IPv6
+Type: AAAA Record  
+Name: api
+Points to: your_ipv6_address
+TTL: 3600
+```
+
+#### Step 3: Update Nginx Configuration
+```bash
+sudo nano /etc/nginx/conf.d/tip_prediction.conf
+```
+
+Update the server_name to include your subdomain:
+```nginx
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    listen 443 ssl;
+    server_name 45.93.138.9 django.codanics.com;
+
+    # Rest of configuration remains same...
+}
+```
+
+#### Step 4: Update Django Settings
+```bash
+nano /home/django_user/tip_prediction_django_app/tip_prediction/tip_prediction/settings_prod.py
+```
+
+Add your subdomain to ALLOWED_HOSTS:
+```python
+ALLOWED_HOSTS = ['django.codanics.com', 'yourdomain.com', '45.93.138.9', 'localhost']
+```
+
+#### Step 5: Get SSL Certificate for Domain
+```bash
+# Stop nginx temporarily
+sudo systemctl stop nginx
+
+# Get SSL certificate for your domain
+sudo apt install -y certbot python3-certbot-nginx
+sudo ufw allow 'Nginx Full'
+sudo certbot --nginx -d django.codanics.com
+
+
+# Update nginx configuration to use real SSL
+sudo nano /etc/nginx/conf.d/tip_prediction.conf
+```
+
+Update SSL configuration:
+```nginx
+server {
+    listen 80;
+    server_name django.codanics.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name api.yourdomain.com;
+
+    ssl_certificate /etc/letsencrypt/live/api.yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.yourdomain.com/privkey.pem;
+
+    # Rest of configuration...
+}
+```
+
+#### Step 6: Restart Services
+```bash
+# Test nginx configuration
+sudo nginx -t
+# Start nginx
+sudo systemctl start nginx
+# Reload uWSGI
+uwsgi --reload /home/django_user/tip_prediction.pid
+```
+
+### Verification Steps
+
+```bash
+# Check if DNS is working
+nslookup django.codanics.com
+dig django.codanics.com
+
+# Should return your VPS IP: 45.93.138.9
+```
+
+#### Test Application Access
+```bash
+# Test HTTP
+curl -I http://django.codanics.com
+
+# Test HTTPS (if SSL configured)
+curl -I https://django.codanics.com
+```
+
+### Important Notes
+
+1. **DNS Propagation**: Changes can take 24-48 hours to fully propagate worldwide
+2. **Access Required**: You need access to the DNS management of the domain/subdomain
+3. **SSL Certificate**: You'll need to generate a new SSL certificate for the domain
+4. **Multiple Domains**: You can point multiple subdomains to the same VPS
+
+### Auto-SSL Renewal Setup
+```bash
+# Add cron job for auto SSL renewal
+sudo crontab -e
+
+# Add this line:
+0 12 * * * /usr/bin/certbot renew --quiet && systemctl reload nginx
+```
+
+After completing these steps, your application will be accessible via your Hostinger subdomain!
+
+
+### Add a cron job for automatic updates from github for the app
+
+```bash
+# Switch to django user
+sudo su - django_user
+
+# Create update script
+nano ~/update_app.sh
+```
+
+Add this content to the script:
 ```bash
 #!/bin/bash
-pg_dump -U ml_user -h localhost ml_model_db > /home/django_user/backups/db_$(date +%Y%m%d_%H%M%S).sql
+# Auto-update script for Django app
+
+# Log file
+LOG_FILE="/home/django_user/update_app.log"
+echo "$(date): Starting app update..." >> $LOG_FILE
+
+# Change to app directory
+cd /home/django_user/tip_prediction_django_app
+
+# Pull latest changes
+git pull origin main >> $LOG_FILE 2>&1
+
+# Update dependencies if requirements changed
+pip install -r requirements.txt >> $LOG_FILE 2>&1
+
+# Run migrations and collect static files
+cd tip_prediction
+export DJANGO_SETTINGS_MODULE=tip_prediction.settings_prod
+python manage.py migrate >> $LOG_FILE 2>&1
+python manage.py collectstatic --noinput >> $LOG_FILE 2>&1
+
+# Reload application
+cd /home/django_user
+uwsgi --reload tip_prediction.pid >> $LOG_FILE 2>&1
+
+echo "$(date): App update completed" >> $LOG_FILE
 ```
 
-### 11.4 Automated Backups with Cron
+Make the script executable:
+```bash
+chmod +x ~/update_app.sh
+```
+
+Add cron job (runs every day at 2 AM):
 ```bash
 crontab -e
+
+# Add this line:
+0 2 * * * /home/django_user/update_app.sh
 ```
 
-Add:
+View update logs:
+```bash
+tail -f /home/django_user/update_app.log
 ```
-0 2 * * * /home/django_user/backup_db.sh
-```
-
-This guide provides a complete deployment solution for your Django ML model application on Hostinger KVM VPS with production-ready configuration, security measures, and maintenance procedures.
