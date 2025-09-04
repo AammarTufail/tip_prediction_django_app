@@ -2,6 +2,10 @@
 
 This repository demonstrates how to deploy a machine learning model using Django, a high-level Python web framework. The project includes a simple web interface that allows users to input data and receive predictions from the ML model.
 
+## Project we created in this repo
+> The project we created in this repo is deployed at [TIp Prediction Django App](https://django.codanics.com/)
+
+
 > Create a readme.md file of your project.
 
 ## 1. Create python env
