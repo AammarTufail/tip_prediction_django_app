@@ -482,7 +482,7 @@ If you have a subdomain from another Hostinger account, you can point it to your
 
 # For subdomain (e.g., api.yourdomain.com)
 Type: A Record
-Name: django.codanics.com
+Name: app.yourdomain.com
 Points to: 45.xx.xxx.x (your IP) (your VPS IP)
 TTL: 3600
 
@@ -501,12 +501,39 @@ sudo nano /etc/nginx/conf.d/tip_prediction.conf
 Update the server_name to include your subdomain:
 ```nginx
 server {
+    if ($host = app.yourdomain.com) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    listen 80;
+    server_name app.yourdomain.com;
+    return 301 https://$server_name$request_uri;
+
+
+}
+server {
     listen 80 default_server;
     listen [::]:80 default_server;
     listen 443 ssl;
-    server_name 45.xx.xxx.x (your IP) django.codanics.com;
+    server_name app.yourdomain.com;
+    ssl_certificate /etc/letsencrypt/live/app.yourdomain.com/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/app.yourdomain.com/privkey.pem; # managed by Certbot
 
-    # Rest of configuration remains same...
+
+    location / {
+        include uwsgi_params;
+        uwsgi_pass unix:/home/django_user/uwsgi.sock;
+    }
+
+    location /static/ {
+        alias /home/django_user/tip_prediction_django_app/tip_prediction/staticfiles/;
+    }
+
+    location /media/ {
+        alias /home/django_user/tip_prediction_django_app/tip_prediction/media/;
+    }
+
 }
 ```
 
