@@ -669,9 +669,10 @@ View update logs:
 ```bash
 tail -f /home/django_user/update_app.log
 ```
----
+
 
 ## Refresh if some errors come
+
 ```bash
 # Clean start - stop any prior instance
 [ -f /home/django_user/tip_prediction.pid ] && uwsgi --stop /home/django_user/tip_prediction.pid || true
@@ -688,13 +689,7 @@ sudo nginx -t
 sudo systemctl restart nginx
 ```
 
----
-
-
-
-
-
-## Reset everything and start from scratch
+# Reset everything and start from scratch
 
 ```bash
 # Stop services
@@ -717,8 +712,16 @@ sudo rm -f /etc/letsencrypt/live/app.yourdomain.com/privkey.pem
 # Remove nginx configuration
 sudo rm -f /etc/nginx/sites-available/app.yourdomain.com
 sudo rm -f /etc/nginx/sites-enabled/app.yourdomain.com
-
-# Start fresh
+sudo rm -f /etc/nginx/conf.d/tip_prediction.conf
+# Remove uWSGI configuration
+sudo rm -f /home/django_user/uwsgi.ini
+# Remove PID and socket files
+sudo rm -f /home/django_user/tip_prediction.pid
+sudo rm -f /home/django_user/uwsgi.sock
+# Remove django user
+sudo userdel -r django_user
 ```
+
+> The End.
 
 
