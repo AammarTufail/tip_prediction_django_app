@@ -65,14 +65,24 @@ ALTER ROLE ml_user SET client_encoding TO 'utf8';
 ALTER ROLE ml_user SET default_transaction_isolation TO 'read committed';
 ALTER ROLE ml_user SET timezone TO 'UTC';
 GRANT ALL PRIVILEGES ON DATABASE ml_model_db TO ml_user;
+```
+> run the following commands:
+
+```sql
 \c ml_model_db;
+```
+> then run this
+
+```sql
 GRANT ALL PRIVILEGES ON SCHEMA public TO ml_user;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ml_user;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ml_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ml_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ml_user;
-\q
 ```
+
+> press `\q` to exit.
+
 
 ## Step 4: Deploy Django Application
 
@@ -82,7 +92,9 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ml_user;
 sudo su django_user
 cd
 chmod 711 .
+```
 
+```bash
 git clone https://github.com/AammarTufail/tip_prediction_django_app.git
 ```
 
@@ -204,8 +216,17 @@ tail -n60 /home/django_user/tip_prediction.log
 ```bash
 sudo apt install -y nginx
 ```
+### 6.1 Generate Self-Signed Certificate for IP
+```bash
+# Create self-signed certificate for IP address
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout /etc/ssl/private/ip-selfsigned.key \
+  -out /etc/ssl/certs/ip-selfsigned.crt \
+  -subj "/CN=45.xx.xxx.x (your IP)" \
+  -addext "subjectAltName = IP:45.xx.xxx.x (your IP)"
+```
 
-### 6.1 Create Nginx Configuration
+### 6.2 Create Nginx Configuration
 ```bash
 sudo nano /etc/nginx/conf.d/tip_prediction.conf
 ```
@@ -236,7 +257,7 @@ server {
 }
 ```
 
-### 6.2 Test and Start Nginx
+### 6.3 Test and Start Nginx
 ```bash
 # Test nginx configuration
 sudo nginx -t
@@ -245,7 +266,7 @@ sudo nginx -t
 sudo systemctl restart nginx
 ```
 
-### 6.3 Fix Socket Permissions
+### 6.4 Fix Socket Permissions
 ```bash
 # Ensure proper permissions for socket file
 sudo chmod 711 /home/django_user
@@ -255,7 +276,7 @@ sudo chmod 660 /home/django_user/uwsgi.sock
 
 ## Step 7: SSL Certificate Setup
 
-### 7.1 Generate Self-Signed Certificate for IP
+### 7.1 Generate Self-Signed Certificate for IP (if not done before)
 ```bash
 # Create self-signed certificate for IP address
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
