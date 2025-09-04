@@ -31,11 +31,13 @@ sudo apt install -y gcc python3-dev python3.12-venv nginx postgresql libpq-dev
 ```bash
 # Create user with proper groups and shell
 sudo useradd -m -s /bin/bash -G www-data django_user
-
 # Set password for the user
 sudo passwd django_user
-
 #save the password
+
+# give sudo permission to django_user
+sudo usermod -aG sudo django_user
+
 
 # Switch to django user
 sudo su - django_user
