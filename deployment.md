@@ -493,12 +493,33 @@ Points to: your_ipv6_address
 TTL: 3600
 ```
 
-#### Step 3: Update Nginx Configuration
+
+#### Step 3: Update Django Settings
 ```bash
+nano /home/django_user/tip_prediction_django_app/tip_prediction/tip_prediction/settings_prod.py
+```
+
+Add your subdomain to ALLOWED_HOSTS:
+```python
+ALLOWED_HOSTS = ['django.codanics.com', 'yourdomain.com', '45.xx.xxx.x (your IP)', 'localhost']
+```
+
+#### Step 5: Get SSL Certificate for Domain
+```bash
+# Stop nginx temporarily
+sudo systemctl stop nginx
+
+# Get SSL certificate for your domain
+sudo apt install -y certbot python3-certbot-nginx
+sudo ufw allow 'Nginx Full'
+sudo certbot --nginx -d django.codanics.com
+
+
+# Update nginx configuration to use real SSL
 sudo nano /etc/nginx/conf.d/tip_prediction.conf
 ```
 
-Update the server_name to include your subdomain:
+Update SSL configuration:
 ```nginx
 server {
     if ($host = app.yourdomain.com) {
@@ -537,56 +558,17 @@ server {
 }
 ```
 
-#### Step 4: Update Django Settings
-```bash
-nano /home/django_user/tip_prediction_django_app/tip_prediction/tip_prediction/settings_prod.py
-```
-
-Add your subdomain to ALLOWED_HOSTS:
-```python
-ALLOWED_HOSTS = ['django.codanics.com', 'yourdomain.com', '45.xx.xxx.x (your IP)', 'localhost']
-```
-
-#### Step 5: Get SSL Certificate for Domain
-```bash
-# Stop nginx temporarily
-sudo systemctl stop nginx
-
-# Get SSL certificate for your domain
-sudo apt install -y certbot python3-certbot-nginx
-sudo ufw allow 'Nginx Full'
-sudo certbot --nginx -d django.codanics.com
-
-
-# Update nginx configuration to use real SSL
-sudo nano /etc/nginx/conf.d/tip_prediction.conf
-```
-
-Update SSL configuration:
-```nginx
-server {
-    listen 80;
-    server_name django.codanics.com;
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl;
-    server_name api.yourdomain.com;
-
-    ssl_certificate /etc/letsencrypt/live/api.yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/api.yourdomain.com/privkey.pem;
-
-    # Rest of configuration...
-}
-```
-
 #### Step 6: Restart Services
 ```bash
 # Test nginx configuration
 sudo nginx -t
-# Start nginx
+sudo systemctl stop nginx
+sudo systemctl stop nginx
+sudo pkill -9 nginx
+sudo rm -f /run/nginx.pid
+sudo nginx -t
 sudo systemctl start nginx
+sudo systemctl status nginx
 # Reload uWSGI
 uwsgi --reload /home/django_user/tip_prediction.pid
 ```
