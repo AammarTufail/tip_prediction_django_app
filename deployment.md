@@ -669,3 +669,56 @@ View update logs:
 ```bash
 tail -f /home/django_user/update_app.log
 ```
+---
+
+## Refresh if some errors come
+```bash
+# Clean start - stop any prior instance
+[ -f /home/django_user/tip_prediction.pid ] && uwsgi --stop /home/django_user/tip_prediction.pid || true
+
+# Start uWSGI
+uwsgi --ini /home/django_user/uwsgi.ini
+sleep 2
+# Check if socket was created
+ls -l /home/django_user/uwsgi.sock
+# Test nginx configuration
+sudo nginx -t
+
+# Restart nginx
+sudo systemctl restart nginx
+```
+
+---
+
+
+
+
+
+## Reset everything and start from scratch
+
+```bash
+# Stop services
+sudo systemctl stop nginx
+sudo systemctl stop uwsgi
+
+# Remove application files
+sudo rm -rf /home/django_user/tip_prediction_django_app
+
+# Remove virtual environment
+sudo rm -rf /home/django_user/venvs/tip_prediction
+
+# Remove logs
+sudo rm -f /home/django_user/update_app.log
+
+# Remove SSL certificates
+sudo rm -f /etc/letsencrypt/live/app.yourdomain.com/fullchain.pem
+sudo rm -f /etc/letsencrypt/live/app.yourdomain.com/privkey.pem
+
+# Remove nginx configuration
+sudo rm -f /etc/nginx/sites-available/app.yourdomain.com
+sudo rm -f /etc/nginx/sites-enabled/app.yourdomain.com
+
+# Start fresh
+```
+
+
